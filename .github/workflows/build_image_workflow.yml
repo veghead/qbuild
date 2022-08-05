@@ -3,7 +3,7 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: dreadtech/device-arm-build:0.4
+    container: dreadtech/device-build-arm:0.4
     steps:
       - name: Install SSH key
         uses: shimataro/ssh-key-action@3c9b0fc6f2d223b8450b02a0445f526350fc73e0
@@ -28,68 +28,3 @@ jobs:
       - name: Run the tests
         run: |
           ceedling test
-  build:
-    needs: [test, version-bump-tag]
-    runs-on: ubuntu-latest
-    container: dreadtech/device-arm-build:0.4
-    steps:
-      - name: Set up ssh auth
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SILABS }}" > ~/.ssh/silabs
-          chmod 400 ~/.ssh/silabs
-          ssh-agent -a ${SSH_AUTH_SOCK} > /dev/null   
-          ssh-add ~/.ssh/silabs
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - name: Checkout submodules
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-          GIT_SSH_COMMAND: "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
-        run: |
-          git submodule update --init --recursive
-      - name: "Run CMake for Production release build"
-        run: |
-          CMAKE_APP_FLAGS=$(cat << EOF
-          --no-warn-unused-cli
-          -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-arm-none-eabi.cmake
-          -DSDK_PATH=`/bin/pwd`/gecko/gecko_sdk
-          -DTOOLCHAIN_PREFIX=/usr
-          -DCMAKE_VERBOSE_MAKEFILE=OFF
-          EOF
-          )
-          echo ${CMAKE_APP_FLAGS}
-          mkdir build
-          cd build 
-          cmake $CMAKE_APP_FLAGS -G "Unix Makefiles" -DPRODUCTION_RELEASE:STRING=YES ..
-      - name: "Build"
-        run: |
-          cd build
-          make -j11
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2.2.4
-        with:
-          name: mqautoclavetag_${{ needs.version-bump-tag.outputs.new_tag }}_${{github.run_number}}
-          path: build/mqautoclavetag.*
-          if-no-files-found: error
-
-  version-bump-tag:
-    outputs:
-      new_tag: ${{ steps.tag.outputs.new_tag }}
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2.3.4
-        with:
-          fetch-depth: '1'
-
-      - name: Bump version and push tag
-        uses: anothrNick/github-tag-action@1.36.0
-        id: tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: true
-          DEFAULT_BUMP: minor
-          RELEASE_BRANCHES: main
-          PRERELEASE_SUFFIX: ${{ github.head_ref || github.ref_name }}
