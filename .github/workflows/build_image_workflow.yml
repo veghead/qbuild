@@ -3,28 +3,16 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: dreadtech/device-build-arm:0.4
+    name: Hardware In the Loop
+    environment:
+      name: ${{ inputs.env }}
+    concurrency:
+      group: ${{ inputs.env }}
+    defaults:
+      run:
+        working-directory: "/home/github/actions-runner/_work/mqflexv3/mqflexv3/hil-testing/${GITHUB_JOB}"
     steps:
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@3c9b0fc6f2d223b8450b02a0445f526350fc73e0
-        with:
-          key: ${{ secrets.DEPLOY_SILABS }}
-          name: id_rsa
-          known_hosts: unnecessary
-      - name: Set up ssh auth
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      - name: "Setup environment variables"
         run: |
-          ssh-agent -a ${SSH_AUTH_SOCK} > /dev/null
-          ssh-add
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - name: Checkout submodules
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-          GIT_SSH_COMMAND: "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
-        run: |
-          git submodule update --init --recursive
-      - name: Run the tests
-        run: |
-          ceedling test
+          echo "HIL_DIR=/home/github/actions-runner/_work/mqflexv3/mqflexv3/hil-testing/${GITHUB_JOB}" >> $GITHUB_ENV
+          echo "echo ${HIL_DIR}"
