@@ -4,10 +4,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     name: Hardware In the Loop
-    environment:
-      name: ${{ inputs.env }}
-    concurrency:
-      group: ${{ inputs.env }}
     defaults:
       run:
         working-directory: "/home/github/actions-runner/_work/mqflexv3/mqflexv3/hil-testing/${GITHUB_JOB}"
