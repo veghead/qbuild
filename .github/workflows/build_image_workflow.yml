@@ -6,9 +6,9 @@ jobs:
     name: Hardware In the Loop
     defaults:
       run:
-        working-directory: "/home/github/actions-runner/_work/mqflexv3/mqflexv3/hil-testing/${GITHUB_JOB}"
+        working-directory: "/tmp/ifred-${GITHUB_JOB}"
     steps:
       - name: "Setup environment variables"
         run: |
-          echo "HIL_DIR=/home/github/actions-runner/_work/mqflexv3/mqflexv3/hil-testing/${GITHUB_JOB}" >> $GITHUB_ENV
+          echo "HIL_DIR=/tmp/ifred-${GITHUB_JOB}" >> $GITHUB_ENV
           echo "echo ${HIL_DIR}"
